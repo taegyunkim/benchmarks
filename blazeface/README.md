@@ -24,6 +24,8 @@ To watch files for changes, and launch a dev server:
 yarn watch
 ```
 
+Then navigate to http://localhost:1234/index.html
+
 ## If you are developing blazeface locally, and want to test the changes in the demos
 
 Cd into the blazeface folder:
