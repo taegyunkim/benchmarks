@@ -31,6 +31,13 @@ let videoWidth;
 let videoHeight;
 let video;
 let canvas;
+let videoSource = new Array();
+let videoCount;
+let i = 0;
+
+videoSource[0] = './test_videos/aassnaulhq.mp4';
+videoSource[1] = './test_videos/aayfryxljh.mp4';
+videoCount = videoSource.length;
 
 const state = {
   backend: 'wasm',
@@ -40,20 +47,48 @@ const gui = new dat.GUI();
 gui.add(state, 'backend', ['wasm', 'webgl', 'cpu']).onChange(
     async (backend) => {await tf.setBackend(backend);});
 
+function loadNext(videoNum) {
+    video.src = videoSource[videoNum];
+    video.load();
+}
+
 async function setupCamera() {
   video = document.getElementById('video');
-
-  video.src = './test_videos/aassnaulhq.mp4';
   video.type = 'video/mp4';
 
+  loadNext(i);
+
   return new Promise((resolve) => {
-    video.onloadedmetadata = () => {
-      resolve(video);
+    video.oncanplaythrough = () => {
+        videoWidth = video.videoWidth;
+        videoHeight = video.videoHeight;
+        video.width = videoWidth;
+        video.height = videoHeight;
+
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+
+        video.play();
+        renderPrediction();
+        resolve(video);
+    };
+    video.onended = () => {
+        i+=1;
+        if (i == videoCount) {
+            i = 0;
+            console.log('played all');
+        }
+        loadNext(i);
     };
   });
 }
 
 const renderPrediction = async () => {
+  if (video.readyState < 2) {
+      // When the video is not loaded enough, it doesn't make sesne to run
+      // prediction. So simply return.
+      return;
+  }
   stats.begin();
 
   const returnTensors = false;
@@ -100,23 +135,13 @@ const renderPrediction = async () => {
 
 const setupPage = async () => {
   await tf.setBackend(state.backend);
-  await setupCamera();
-  video.play();
-
-  videoWidth = video.videoWidth;
-  videoHeight = video.videoHeight;
-  video.width = videoWidth;
-  video.height = videoHeight;
+  model = await blazeface.load();
 
   canvas = document.getElementById('output');
-  canvas.width = videoWidth;
-  canvas.height = videoHeight;
   ctx = canvas.getContext('2d');
   ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
 
-  model = await blazeface.load();
-
-  renderPrediction();
+  await setupCamera();
 };
 
 setupPage();
