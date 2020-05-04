@@ -31,13 +31,9 @@ let videoWidth;
 let videoHeight;
 let video;
 let canvas;
-let videoSource = new Array();
-let videoCount;
-let i = 0;
-
-videoSource[0] = './test_videos/aassnaulhq.mp4';
-videoSource[1] = './test_videos/aayfryxljh.mp4';
-videoCount = videoSource.length;
+let videoSource = ['./test_videos/aassnaulhq.mp4',
+                   './test_videos/aayfryxljh.mp4'];
+let i = 1;
 
 const state = {
   backend: 'wasm',
@@ -45,7 +41,9 @@ const state = {
 
 const gui = new dat.GUI();
 gui.add(state, 'backend', ['wasm', 'webgl', 'cpu']).onChange(
-    async (backend) => {await tf.setBackend(backend);});
+    async (backend) => {
+await tf.setBackend(backend);
+});
 
 function loadNext(videoNum) {
     video.src = videoSource[videoNum];
@@ -74,7 +72,7 @@ async function setupCamera() {
     };
     video.onended = () => {
         i+=1;
-        if (i == videoCount) {
+        if (i == videoSource.length) {
             i = 0;
             console.log('played all');
         }
