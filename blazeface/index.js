@@ -35,6 +35,8 @@ let videoSource = ['./test_videos/aassnaulhq.mp4',
                    './test_videos/aayfryxljh.mp4'];
 let pause = false;
 let i = 0;
+let renderCount = 0;
+let avg = 0;
 
 const state = {
   backend: 'wasm',
@@ -76,6 +78,7 @@ async function setupCamera() {
         if (i == videoSource.length) {
           pause = true;
           console.log('played all');
+          console.log(avg);
         } else {
           loadNext(i);
         }
@@ -90,6 +93,7 @@ const renderPrediction = async () => {
       // prediction. So simply return.
       return;
   }
+  let startTime = performance.now();
   stats.begin();
 
   const returnTensors = false;
@@ -130,6 +134,9 @@ const renderPrediction = async () => {
   }
 
   stats.end();
+  let endTime = performance.now();
+  avg = ((avg * renderCount) + (endTime - startTime)) / (renderCount + 1);
+  renderCount += 1;
 
   requestAnimationFrame(renderPrediction);
 };

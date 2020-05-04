@@ -12,7 +12,8 @@
     "@tensorflow-models/blazeface": "0.0.5",
     "@tensorflow/tfjs-backend-wasm": "^1.5.2-alpha1",
     "@tensorflow/tfjs-converter": "^1.5.2",
-    "@tensorflow/tfjs-core": "^1.5.2"
+    "@tensorflow/tfjs-core": "^1.5.2",
+    "csv-writer": "^1.6.0"
   },
   "scripts": {
     "watch": "cross-env NODE_ENV=development parcel index.html test_videos/*.mp4 --no-hmr --open --target browser",
