@@ -32,65 +32,63 @@ let videoHeight;
 let video;
 let canvas;
 let videoSource = ['./test_videos/aassnaulhq.mp4',
-                   './test_videos/aayfryxljh.mp4'];
+  './test_videos/aayfryxljh.mp4'];
 let pause = false;
 let videoIdx = 0;
+let backends = ['wasm', 'webgl'];
+let backendIdx = 0;
 let renderCount = 0;
 let avg = 0;
 
-const state = {
-  backend: 'wasm',
-};
-
-const gui = new dat.GUI();
-gui.add(state, 'backend', ['wasm', 'webgl', 'cpu']).onChange(
-    async (backend) => {
-await tf.setBackend(backend);
-});
-
-function loadNext(videoNum) {
-    video.src = videoSource[videoNum];
-    video.load();
+async function loadNext(videoNum) {
+  video.src = videoSource[videoNum];
 }
 
 async function setupCamera() {
   video = document.getElementById('video');
   video.type = 'video/mp4';
 
+
+  video.onended = () => {
+    videoIdx += 1;
+    if (videoIdx == videoSource.length) {
+      console.log(backends[backendIdx] + ': ' + avg);
+      backendIdx += 1;
+      if (backendIdx < backends.length) {
+        tf.setBackend(backends[backendIdx]);
+        avg = 0;
+        renderCount = 0;
+        videoIdx = 0;
+        loadNext(videoIdx);
+      } else {
+        pause = true;
+      }
+    } else {
+      loadNext(videoIdx);
+    }
+  };
+
+  video.oncanplaythrough = () => {
+    videoWidth = video.videoWidth;
+    videoHeight = video.videoHeight;
+    video.width = videoWidth;
+    video.height = videoHeight;
+
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+    video.play();
+    renderPrediction();
+  };
+
   loadNext(videoIdx);
-
-  return new Promise((resolve) => {
-    video.oncanplaythrough = () => {
-        videoWidth = video.videoWidth;
-        videoHeight = video.videoHeight;
-        video.width = videoWidth;
-        video.height = videoHeight;
-
-        canvas.width = videoWidth;
-        canvas.height = videoHeight;
-
-        video.play();
-        renderPrediction();
-        resolve(video);
-    };
-    video.onended = () => {
-        videoIdx+=1;
-        if (videoIdx == videoSource.length) {
-          pause = true;
-          console.log(state.backend +': ' + avg);
-        } else {
-          loadNext(videoIdx);
-        }
-    };
-  });
 }
 
 const renderPrediction = async () => {
   if (pause) return;
   if (video.readyState < 2) {
-      // When the video is not loaded enough, it doesn't make sesne to run
-      // prediction. So simply return.
-      return;
+    // When the video is not loaded enough, it doesn't make sesne to run
+    // prediction. So simply return.
+    return;
   }
   let startTime = performance.now();
   stats.begin();
@@ -141,7 +139,7 @@ const renderPrediction = async () => {
 };
 
 const setupPage = async () => {
-  await tf.setBackend(state.backend);
+  await tf.setBackend(backends[backendIdx]);
   model = await blazeface.load();
 
   canvas = document.getElementById('output');
