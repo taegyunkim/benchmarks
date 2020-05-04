@@ -33,7 +33,8 @@ let video;
 let canvas;
 let videoSource = ['./test_videos/aassnaulhq.mp4',
                    './test_videos/aayfryxljh.mp4'];
-let i = 1;
+let pause = false;
+let i = 0;
 
 const state = {
   backend: 'wasm',
@@ -73,15 +74,17 @@ async function setupCamera() {
     video.onended = () => {
         i+=1;
         if (i == videoSource.length) {
-            i = 0;
-            console.log('played all');
+          pause = true;
+          console.log('played all');
+        } else {
+          loadNext(i);
         }
-        loadNext(i);
     };
   });
 }
 
 const renderPrediction = async () => {
+  if (pause) return;
   if (video.readyState < 2) {
       // When the video is not loaded enough, it doesn't make sesne to run
       // prediction. So simply return.
