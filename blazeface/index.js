@@ -25,14 +25,16 @@ const stats = new Stats();
 stats.showPanel(1);
 document.body.prepend(stats.domElement);
 
+let records = [];
+
 let model;
 let ctx;
 let videoWidth;
 let videoHeight;
 let video;
 let canvas;
-let videoSource = ['./test_videos/aassnaulhq.mp4',
-  './test_videos/aayfryxljh.mp4'];
+let videoSource = ['aassnaulhq.mp4',
+  'aayfryxljh.mp4'];
 let pause = false;
 let videoIdx = 0;
 let backends = ['wasm', 'webgl'];
@@ -41,26 +43,30 @@ let renderCount = 0;
 let avg = 0;
 
 async function loadNext(videoNum) {
-  video.src = videoSource[videoNum];
+  video.src = './test_videos/' + videoSource[videoNum];
 }
 
 async function setupCamera() {
   video = document.getElementById('video');
   video.type = 'video/mp4';
 
-
   video.onended = () => {
+    records.push({
+      'backend': backends[backendIdx],
+      'video': videoSource[videoIdx],
+      'avg_time': avg,
+    });
+    avg = 0;
+    renderCount = 0;
     videoIdx += 1;
     if (videoIdx == videoSource.length) {
-      console.log(backends[backendIdx] + ': ' + avg);
       backendIdx += 1;
       if (backendIdx < backends.length) {
         tf.setBackend(backends[backendIdx]);
-        avg = 0;
-        renderCount = 0;
         videoIdx = 0;
         loadNext(videoIdx);
       } else {
+        console.log(records);
         pause = true;
       }
     } else {
