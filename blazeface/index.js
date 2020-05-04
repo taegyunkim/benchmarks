@@ -34,7 +34,7 @@ let canvas;
 let videoSource = ['./test_videos/aassnaulhq.mp4',
                    './test_videos/aayfryxljh.mp4'];
 let pause = false;
-let i = 0;
+let videoIdx = 0;
 let renderCount = 0;
 let avg = 0;
 
@@ -57,7 +57,7 @@ async function setupCamera() {
   video = document.getElementById('video');
   video.type = 'video/mp4';
 
-  loadNext(i);
+  loadNext(videoIdx);
 
   return new Promise((resolve) => {
     video.oncanplaythrough = () => {
@@ -74,13 +74,12 @@ async function setupCamera() {
         resolve(video);
     };
     video.onended = () => {
-        i+=1;
-        if (i == videoSource.length) {
+        videoIdx+=1;
+        if (videoIdx == videoSource.length) {
           pause = true;
-          console.log('played all');
-          console.log(avg);
+          console.log(state.backend +': ' + avg);
         } else {
-          loadNext(i);
+          loadNext(videoIdx);
         }
     };
   });
