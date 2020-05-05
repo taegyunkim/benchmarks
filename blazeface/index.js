@@ -19,7 +19,7 @@ import * as blazeface from '@tensorflow-models/blazeface';
 import * as tf from '@tensorflow/tfjs-core';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
 
-tfjsWasm.setWasmPath('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@1.5.2-alpha1/dist/tfjs-backend-wasm.wasm');
+tfjsWasm.setWasmPath('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@latest/dist/tfjs-backend-wasm.wasm');
 
 const stats = new Stats();
 stats.showPanel(0);
@@ -36,8 +36,8 @@ let videoIdx = 0;
 let pause = false;
 
 let backends = [
-  'webgl',
   'wasm',
+  'webgl',
 ];
 let backendIdx = 0;
 
@@ -69,7 +69,7 @@ async function setupCamera() {
       video.play();
       renderPrediction();
     };
-    video.onended = () => {
+    video.onended = async () => {
       console.log(backends[backendIdx] + ' ' + videoSources[videoIdx] + ' ' + avg);
       avg = 0;
       renderCount = 0;
@@ -80,7 +80,7 @@ async function setupCamera() {
           pause = true;
         } else {
           videoIdx = 0;
-          tf.setBackend(backends[backendIdx]);
+          await tf.setBackend(backends[backendIdx]);
           video.src = videoSources[videoIdx];
           video.load();
         }
