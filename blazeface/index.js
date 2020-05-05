@@ -22,78 +22,73 @@ import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
 tfjsWasm.setWasmPath('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@latest/dist/tfjs-backend-wasm.wasm');
 
 const stats = new Stats();
-stats.showPanel(1);
+stats.showPanel(0);
 document.body.prepend(stats.domElement);
 
-let records = [];
-
-let model;
-let ctx;
-let videoWidth;
-let videoHeight;
-let video;
-let canvas;
-let videoSource = ['aassnaulhq.mp4',
-  'aayfryxljh.mp4'];
-let pause = false;
-let videoIdx = 0;
-let backends = ['wasm', 'webgl'];
-let backendIdx = 0;
-let renderCount = 0;
+let model, ctx, videoWidth, videoHeight, video, canvas;
 let avg = 0;
+let renderCount = 0;
+let videoSources = [
+  'test_videos/adohdulfwb_720p.mov',
+  'test_videos/aayfryxljh_720p.mov',
+];
+let videoIdx = 0;
+let pause = false;
 
-async function loadNext(videoNum) {
-  video.src = './test_videos/' + videoSource[videoNum];
-}
+const state = {
+  backend: 'wasm'
+};
 
 async function setupCamera() {
   video = document.getElementById('video');
   video.type = 'video/mp4';
+  video.src = videoSources[videoIdx];
+  video.load();
 
-  video.onended = () => {
-    records.push({
-      'backend': backends[backendIdx],
-      'video': videoSource[videoIdx],
-      'avg_time': avg,
-    });
-    avg = 0;
-    renderCount = 0;
-    videoIdx += 1;
-    if (videoIdx == videoSource.length) {
-      backendIdx += 1;
-      if (backendIdx < backends.length) {
-        tf.setBackend(backends[backendIdx]);
-        videoIdx = 0;
-        loadNext(videoIdx);
-      } else {
-        console.log(records);
-        pause = true;
+  return new Promise((resolve) => {
+    video.onloadedmetadata = () => {
+      resolve(video);
+    };
+    video.oncanplaythrough = async () => {
+      videoWidth = video.videoWidth;
+      videoHeight = video.videoHeight;
+      video.width = videoWidth;
+      video.height = videoHeight;
+
+      canvas = document.getElementById('output');
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
+      ctx = canvas.getContext('2d');
+      ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+
+      if (typeof model == 'undefined') {
+        model = await blazeface.load();
       }
-    } else {
-      loadNext(videoIdx);
-    }
-  };
-
-  video.oncanplaythrough = () => {
-    videoWidth = video.videoWidth;
-    videoHeight = video.videoHeight;
-    video.width = videoWidth;
-    video.height = videoHeight;
-
-    canvas.width = videoWidth;
-    canvas.height = videoHeight;
-    video.play();
-    renderPrediction();
-  };
-
-  loadNext(videoIdx);
+      video.play();
+      renderPrediction();
+    };
+    video.onended = () => {
+      console.log(avg);
+      avg = 0;
+      renderCount = 0;
+      videoIdx += 1;
+      if (videoIdx == videoSources.length) {
+        pause = true;
+      } else {
+        video.src = videoSources[videoIdx];
+        video.load();
+      }
+    };
+  });
 }
 
 const renderPrediction = async () => {
-  if (pause) return;
+  if (pause) {
+    return;
+  }
   if (video.readyState < 2) {
-    // When the video is not loaded enough, it doesn't make sesne to run
-    // prediction. So simply return.
+    // It's possible that the video src has changed since last run, in that
+    // case simply terminate.
     return;
   }
   let startTime = performance.now();
@@ -120,13 +115,13 @@ const renderPrediction = async () => {
       const start = predictions[i].topLeft;
       const end = predictions[i].bottomRight;
       const size = [end[0] - start[0], end[1] - start[1]];
-      ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+      ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
       ctx.fillRect(start[0], start[1], size[0], size[1]);
 
       if (annotateBoxes) {
         const landmarks = predictions[i].landmarks;
 
-        ctx.fillStyle = 'blue';
+        ctx.fillStyle = "blue";
         for (let j = 0; j < landmarks.length; j++) {
           const x = landmarks[j][0];
           const y = landmarks[j][1];
@@ -138,20 +133,14 @@ const renderPrediction = async () => {
 
   stats.end();
   let endTime = performance.now();
+
   avg = ((avg * renderCount) + (endTime - startTime)) / (renderCount + 1);
-  renderCount += 1;
 
   requestAnimationFrame(renderPrediction);
 };
 
 const setupPage = async () => {
-  await tf.setBackend(backends[backendIdx]);
-  model = await blazeface.load();
-
-  canvas = document.getElementById('output');
-  ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-
+  await tf.setBackend(state.backend);
   await setupCamera();
 };
 
