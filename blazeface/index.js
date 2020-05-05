@@ -19,7 +19,7 @@ import * as blazeface from '@tensorflow-models/blazeface';
 import * as tf from '@tensorflow/tfjs-core';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
 
-tfjsWasm.setWasmPath('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@latest/dist/tfjs-backend-wasm.wasm');
+tfjsWasm.setWasmPath('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@1.5.2-alpha1/dist/tfjs-backend-wasm.wasm');
 
 const stats = new Stats();
 stats.showPanel(0);
@@ -35,9 +35,11 @@ let videoSources = [
 let videoIdx = 0;
 let pause = false;
 
-const state = {
-  backend: 'wasm'
-};
+let backends = [
+  'webgl',
+  'wasm',
+];
+let backendIdx = 0;
 
 async function setupCamera() {
   video = document.getElementById('video');
@@ -68,12 +70,20 @@ async function setupCamera() {
       renderPrediction();
     };
     video.onended = () => {
-      console.log(avg);
+      console.log(backends[backendIdx] + ' ' + videoSources[videoIdx] + ' ' + avg);
       avg = 0;
       renderCount = 0;
       videoIdx += 1;
       if (videoIdx == videoSources.length) {
-        pause = true;
+        backendIdx += 1;
+        if (backendIdx == backends.length) {
+          pause = true;
+        } else {
+          videoIdx = 0;
+          tf.setBackend(backends[backendIdx]);
+          video.src = videoSources[videoIdx];
+          video.load();
+        }
       } else {
         video.src = videoSources[videoIdx];
         video.load();
@@ -140,7 +150,7 @@ const renderPrediction = async () => {
 };
 
 const setupPage = async () => {
-  await tf.setBackend(state.backend);
+  await tf.setBackend(backends[backendIdx]);
   await setupCamera();
 };
 
